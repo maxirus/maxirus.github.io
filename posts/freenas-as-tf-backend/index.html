@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Setup FreeNAS as a Terraform backend&nbsp;&ndash;&nbsp;Maxirus Blog</title><link rel="stylesheet" href="/css/core.min.a6bccf8e3db86b0e86cdef1f8b195889bf93f0e81f40876d9d68efc759cf3363f868d4107be407ac60ea626e61bbcf46.css" integrity="sha384-przPjj24aw6Gze8fixlYib&#43;T8OgfQIdtnWjvx1nPM2P4aNQQe&#43;QHrGDqYm5hu89G"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Maxirus Blog</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Better everyday</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">Setup FreeNAS as a Terraform backend</h1><p class="article date">Wednesday, February 5, 2020</p></section><article class="article markdown-body"><p>Terraform is a great tool for provisiong infrastrucutre, deploying apps, and just about everything in between. It&rsquo;s a Swiss Army Knife for DevOps; or at least mine. But to take Terraform to the next level, you need to use a <a href="https://www.terraform.io/docs/backends/index.html"target="_blank">remote backend</a>. This is easy if you&rsquo;re using a Cloud provider but what if you don&rsquo;t want your sensitive deployment data in the cloud and/or, like me, are too cheap to shell out the money for S3, Blob, GCS, etc?</p>
+<p>Fortunately, I&rsquo;m running FreeNAS and it just so happens to come with its own S3 (<a href="https://min.io/"target="_blank">MinIO</a>) service built in! In this guide, I will show you how to set this FreeNAS service to serve as your backend for Terraform.</p>
+<h4 id="step-1">Step 1</h4>
+<p>First we&rsquo;re going to need a new Dataset for this. In FreeNAS, navigate to <em>Storage</em> -&gt; <em>Pools</em> -&gt; <em>&lt;your_pool&gt;</em> -&gt; <em>Add Dataset</em> and create a new Dataset called <code>S3</code></p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/add-dataset.png"><img  src="images/add-dataset.png"
+        alt="Add Dataset"/></a></p>
+<h4 id="step-2">Step 2</h4>
+<p>You&rsquo;ll need an SSL Cert for the S3 Service and ideally a DNS entry from your router/firewall (ie. pfSense). I&rsquo;m going to assume you already have this setup since setting FreeNAS to use HTTPS only should of been one of the first things you did when deploying it. You&rsquo;ll need a Certificate in <em>System</em> -&gt; <em>Certificates</em> to use for the next step.</p>
+<h4 id="step-3">Step 3</h4>
+<p>Navigate to <em>Services</em> and locate the <strong>S3</strong> service and click configure.
+<a target="_blank" rel="noopener noreferrer" 
+  href="images/s3-service-configure.png"><img  src="images/s3-service-configure.png"
+        alt="S3 Configure"/></a></p>
+<ul>
+<li>Select the <em>IP Address</em> you wish to bind to</li>
+<li>You can leave the <em>Port</em> set to <code>9000</code></li>
+<li><em>Access Key</em> should be characters <code>[a-z0-9]{12,20}</code></li>
+<li><em>Secret Key</em> should be <code>[a-z]</code>. I&rsquo;m not certain of the length but I choose 32 characters.</li>
+<li>Save these credentials in a safe place as you&rsquo;ll need them later.</li>
+<li>For the <em>Disk</em>, navigate to the Dataset you created in <em>Step 1</em></li>
+<li>Enable the Browser so your able to create and view your buckets later</li>
+<li>Chose the Certificate mentioned in <em>Step 2</em></li>
+<li>Click Save</li>
+</ul>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/s3-config.png"><img  src="images/s3-config.png"
+        alt="S3 Config"/></a></p>
+<h4 id="step-4">Step 4</h4>
+<p>Navigate to <a href="https://freenas.your-domain.lan:9000/"target="_blank">https://freenas.your-domain.lan:9000/</a> and login to MinIO using the credentials you used from <em>Step 3</em></p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/minio-login.png"><img  src="images/minio-login.png"
+        alt="MinIO Login"/></a></p>
+<p>In the bottom right corner, click the red plus-sign and create a new Bucket named <code>terraform</code>.</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/minio-create-bucket.png"><img  src="images/minio-create-bucket.png"
+        alt="Create Bucket"/></a></p>
+<h4 id="step-5">Step 5</h4>
+<p>Next let&rsquo;s drop those credentials in a secure file location that our Terraform projects can reference. I put mine in <code>~/.s3/backend.conf</code>. It should have the following:</p>
+<pre><code>bucket = &quot;terraform&quot;
+region = &quot;us-east-1&quot;
+endpoint = &quot;https://freenas.your-domain.lan:9000&quot;
+access_key = &quot;&lt;your_access_key&gt;&quot;
+secret_key = &quot;&lt;your_secret_key&gt;&quot;
+skip_credentials_validation = true
+force_path_style = true
+</code></pre><h4 id="step-6">Step 6</h4>
+<p>Now we&rsquo;re ready to configure Terraform. In your Terraform project, create a new file called <code>backend.tf</code> with the following code:</p>
+<pre><code>terraform {
+  backend &quot;s3&quot; {
+    key    = &quot;some/path/appname.tfstate&quot;
+  }
+}
+</code></pre><p>The key can be whatever you want really. I tend to namespace mine based on the project. For example, if I had a project that deployed Bitwarden to Kubernetes my key would be <code>k8s/bitwarden.tfstate</code>.</p>
+<h4 id="step-7">Step 7</h4>
+<p>Finally we can intitialize our project using the new remote backend:
+<code>terraform init -backend-config=/path/to/.s3/backend.conf</code></p>
+<p>That&rsquo;s it, you should be all set to deploy resources and have Terraform save its state to this new S3 backend.</p>
+</article><section class="article labels"><a class="category" href=/categories/development/>Development</a><a class="tag" href=/tags/terraform/>Terraform</a><a class="tag" href=/tags/freenas/>FreeNAS</a><a class="tag" href=/tags/s3/>S3</a></section><section class="article navigation"><p><a class="link" href="/posts/my-first-post/"><span class="li">&rarr;</span>My First Post</a class="link">
+    </p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2019 Notepadium.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>
