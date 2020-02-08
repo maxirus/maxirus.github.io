@@ -26,7 +26,7 @@
 <li><em>Secret Key</em> should be <code>[a-z]</code>. I&rsquo;m not certain of the length but I choose 32 characters.</li>
 <li>Save these credentials in a safe place as you&rsquo;ll need them later.</li>
 <li>For the <em>Disk</em>, navigate to the Dataset you created in <em>Step 1</em></li>
-<li>Enable the Browser so your able to create and view your buckets later</li>
+<li>Enable the Browser so you&rsquo;re able to create and view your buckets later</li>
 <li>Chose the Certificate mentioned in <em>Step 2</em></li>
 <li>Click Save</li>
 </ul>
@@ -34,7 +34,7 @@
   href="images/s3-config.png"><img  src="images/s3-config.png"
         alt="S3 Config"/></a></p>
 <h4 id="step-4">Step 4</h4>
-<p>Navigate to <a href="https://freenas.your-domain.lan:9000/"target="_blank">https://freenas.your-domain.lan:9000/</a> and login to MinIO using the credentials you used from <em>Step 3</em></p>
+<p>Navigate to <a href="https://freenas.your-domain.lan:9000/"target="_blank">https://freenas.your-domain.lan:9000/</a> and login to MinIO using the credentials from <em>Step 3</em></p>
 <p><a target="_blank" rel="noopener noreferrer" 
   href="images/minio-login.png"><img  src="images/minio-login.png"
         alt="MinIO Login"/></a></p>
@@ -44,21 +44,21 @@
         alt="Create Bucket"/></a></p>
 <h4 id="step-5">Step 5</h4>
 <p>Next let&rsquo;s drop those credentials in a secure file location that our Terraform projects can reference. I put mine in <code>~/.s3/backend.conf</code>. It should have the following:</p>
-<pre><code>bucket = &quot;terraform&quot;
-region = &quot;us-east-1&quot;
-endpoint = &quot;https://freenas.your-domain.lan:9000&quot;
-access_key = &quot;&lt;your_access_key&gt;&quot;
-secret_key = &quot;&lt;your_secret_key&gt;&quot;
-skip_credentials_validation = true
-force_path_style = true
-</code></pre><h4 id="step-6">Step 6</h4>
+<div class="highlight"><pre class="chroma"><code class="language-hcl" data-lang="hcl"><span class="n">bucket</span> <span class="o">=</span> <span class="s2">&#34;terraform&#34;</span>
+<span class="n">region</span> <span class="o">=</span> <span class="s2">&#34;us-east-1&#34;</span>
+<span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&#34;https://freenas.your-domain.lan:9000&#34;</span>
+<span class="n">access_key</span> <span class="o">=</span> <span class="s2">&#34;&lt;your_access_key&gt;&#34;</span>
+<span class="n">secret_key</span> <span class="o">=</span> <span class="s2">&#34;&lt;your_secret_key&gt;&#34;</span>
+<span class="n">skip_credentials_validation</span> <span class="o">=</span> <span class="kt">true</span>
+<span class="n">force_path_style</span> <span class="o">=</span> <span class="kt">true</span>
+</code></pre></div><h4 id="step-6">Step 6</h4>
 <p>Now we&rsquo;re ready to configure Terraform. In your Terraform project, create a new file called <code>backend.tf</code> with the following code:</p>
-<pre><code>terraform {
-  backend &quot;s3&quot; {
-    key    = &quot;some/path/appname.tfstate&quot;
+<div class="highlight"><pre class="chroma"><code class="language-hcl" data-lang="hcl"><span class="k">terraform</span> {
+  <span class="k">backend</span> <span class="s2">&#34;s3&#34;</span> {
+<span class="n">    key</span>    <span class="o">=</span> <span class="s2">&#34;some/path/appname.tfstate&#34;</span>
   }
 }
-</code></pre><p>The key can be whatever you want really. I tend to namespace mine based on the project. For example, if I had a project that deployed Bitwarden to Kubernetes my key would be <code>k8s/bitwarden.tfstate</code>.</p>
+</code></pre></div><p>The key can be whatever you want really. I tend to namespace mine based on the project. For example, if I had a project that deployed Bitwarden to Kubernetes my key would be <code>k8s/bitwarden.tfstate</code>.</p>
 <h4 id="step-7">Step 7</h4>
 <p>Finally we can intitialize our project using the new remote backend:
 <code>terraform init -backend-config=/path/to/.s3/backend.conf</code></p>
