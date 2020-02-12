@@ -5,7 +5,8 @@
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Maxirus Blog</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Better everyday</span></div></section><div id="content"><section class="article header">
-    <h1 class="article title">Setup FreeNAS as a Terraform backend</h1><p class="article date">Wednesday, February 5, 2020</p></section><article class="article markdown-body"><p>Terraform is a great tool for provisiong infrastrucutre, deploying apps, and just about everything in between. It&rsquo;s a Swiss Army Knife for DevOps; or at least mine. But to take Terraform to the next level, you need to use a <a href="https://www.terraform.io/docs/backends/index.html"target="_blank">remote backend</a>. This is easy if you&rsquo;re using a Cloud provider but what if you don&rsquo;t want your sensitive deployment data in the cloud and/or, like me, are too cheap to shell out the money for S3, Blob, GCS, etc?</p>
+    <h1 class="article title">Setup FreeNAS as a Terraform backend</h1><p class="article date">Wednesday, February 5, 2020</p></section><article class="article markdown-body"><p>UPDATED: 02/11/2020</p>
+<p>Terraform is a great tool for provisiong infrastrucutre, deploying apps, and just about everything in between. It&rsquo;s a Swiss Army Knife for DevOps; or at least mine. But to take Terraform to the next level, you need to use a <a href="https://www.terraform.io/docs/backends/index.html"target="_blank">remote backend</a>. This is easy if you&rsquo;re using a Cloud provider but what if you don&rsquo;t want your sensitive deployment data in the cloud and/or, like me, are too cheap to shell out the money for S3, Blob, GCS, etc?</p>
 <p>Fortunately, I&rsquo;m running FreeNAS and it just so happens to come with its own S3 (<a href="https://min.io/"target="_blank">MinIO</a>) service built in! In this guide, I will show you how to set this FreeNAS service to serve as your backend for Terraform.</p>
 <h4 id="step-1">Step 1</h4>
 <p>First we&rsquo;re going to need a new Dataset for this. In FreeNAS, navigate to <em>Storage</em> -&gt; <em>Pools</em> -&gt; <em>&lt;your_pool&gt;</em> -&gt; <em>Add Dataset</em> and create a new Dataset called <code>S3</code></p>
@@ -30,6 +31,7 @@
 <li>Chose the Certificate mentioned in <em>Step 2</em></li>
 <li>Click Save</li>
 </ul>
+<p><strong>NOTE</strong>: There is a <a href="https://jira.ixsystems.com/browse/NAS-104996"target="_blank">bug</a> in <code>v11.3-RELEASE</code> that breaks HTTPS. Follow the <a href="https://jira.ixsystems.com/browse/NAS-104996"target="_blank">bug link</a> for workaround.</p>
 <p><a target="_blank" rel="noopener noreferrer" 
   href="images/s3-config.png"><img  src="images/s3-config.png"
         alt="S3 Config"/></a></p>

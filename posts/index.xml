@@ -18,7 +18,8 @@
       <pubDate>Wed, 05 Feb 2020 19:44:46 -0500</pubDate>
       
       <guid>/posts/freenas-as-tf-backend/</guid>
-      <description>Terraform is a great tool for provisiong infrastrucutre, deploying apps, and just about everything in between. It&amp;rsquo;s a Swiss Army Knife for DevOps; or at least mine. But to take Terraform to the next level, you need to use a remote backend. This is easy if you&amp;rsquo;re using a Cloud provider but what if you don&amp;rsquo;t want your sensitive deployment data in the cloud and/or, like me, are too cheap to shell out the money for S3, Blob, GCS, etc?</description>
+      <description>UPDATED: 02/11/2020
+Terraform is a great tool for provisiong infrastrucutre, deploying apps, and just about everything in between. It&amp;rsquo;s a Swiss Army Knife for DevOps; or at least mine. But to take Terraform to the next level, you need to use a remote backend. This is easy if you&amp;rsquo;re using a Cloud provider but what if you don&amp;rsquo;t want your sensitive deployment data in the cloud and/or, like me, are too cheap to shell out the money for S3, Blob, GCS, etc?</description>
     </item>
     
     <item>
