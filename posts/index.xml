@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>©2019 Notepadium.</copyright>
-    <lastBuildDate>Wed, 05 Feb 2020 19:44:46 -0500</lastBuildDate>
+    <lastBuildDate>Wed, 06 May 2020 23:50:46 -0400</lastBuildDate>
     
         <atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>FreeNAS Cloud-Sync using Wasabi</title>
+      <link>/posts/freenas-wasabi-cloud-sync/</link>
+      <pubDate>Wed, 06 May 2020 23:50:46 -0400</pubDate>
+      
+      <guid>/posts/freenas-wasabi-cloud-sync/</guid>
+      <description>With FreeNAS v11.2 and Cloud-Sync, you can easily backup your data to Wasabi without the need of a custom Jail as outlined in this post.
+For those that don&amp;rsquo;t know, Wasabi is an S3 compatible object store. At $5.99/mo per TB of data, it&amp;rsquo;s one of the most economical places to backup your data for long-term storage. I emphasize &amp;ldquo;long-term&amp;rdquo; as Wasabi has some hidden-fees when it comes to data retention (see here).</description>
+    </item>
     
     <item>
       <title>Setup FreeNAS as a Terraform backend</title>

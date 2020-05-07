@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.64.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>FreeNAS Cloud-Sync using Wasabi&nbsp;&ndash;&nbsp;Maxirus Blog</title><link rel="stylesheet" href="/css/core.min.a6bccf8e3db86b0e86cdef1f8b195889bf93f0e81f40876d9d68efc759cf3363f868d4107be407ac60ea626e61bbcf46.css" integrity="sha384-przPjj24aw6Gze8fixlYib&#43;T8OgfQIdtnWjvx1nPM2P4aNQQe&#43;QHrGDqYm5hu89G"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Maxirus Blog</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Better everyday</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">FreeNAS Cloud-Sync using Wasabi</h1><p class="article date">Wednesday, May 6, 2020</p></section><article class="article markdown-body"><p>With FreeNAS <code>v11.2</code> and Cloud-Sync, you can easily backup your data to <a href="https://www.wasabi.com"target="_blank">Wasabi</a> without the need of a custom Jail as outlined in <a href="https://www.ixsystems.com/community/threads/how-to-using-non-amazon-s3-cloud-storage-wasabi.59211/"target="_blank">this post</a>.</p>
+<p>For those that don&rsquo;t know, <a href="https://www.wasabi.com"target="_blank">Wasabi</a> is an S3 compatible <a href="https://www.netapp.com/us/info/what-is-object-storage.aspx"target="_blank">object store</a>. At $5.99/mo per TB of data, it&rsquo;s one of the most economical places to backup your data for <strong>long-term</strong> storage. I emphasize &ldquo;long-term&rdquo; as Wasabi has some hidden-fees when it comes to data retention (see <a href="https://wasabi.com/cloud-storage-pricing/pricing-faqs/"target="_blank">here</a>). TL;DR: keep your data there for &gt;=90 days.</p>
+<p><strong>NOTE</strong>:The steps outlined below assume you already have a Wasabi account.</p>
+<h4 id="1-create-a-user">1) Create a User</h4>
+<p>First we need to create a User for FreeNAS to use. In the Wasabi Console, navigate to <code>Users</code> on the left menu bar and click the blue <code>Create User</code> button. Create a new user with the following properties:</p>
+<ul>
+<li><strong>Username:</strong> <code>freenas</code></li>
+<li><strong>Console Access:</strong> <code>No</code></li>
+<li><strong>API Access:</strong> <code>Yes</code></li>
+<li><strong>Groups</strong>: <code>Backup</code></li>
+<li><strong>Policies</strong>: <code>AmazonS3FullAccess</code></li>
+</ul>
+<p>Your new User should look like this:</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/create_user.png"><img  src="images/create_user.png"
+        alt="Add Dataset"/></a></p>
+<p>Now copy the Keys to your Clipboard and save them somewhere safe.</p>
+<p><strong>NOTE</strong>: AmazonS3FullAccess Policy is overkill. I strongly encourage you to create your own policy that fit your needs (See <a href="https://wasabi.com/wp-content/themes/wasabi/docs/User_Guide/index.html?#t=topics%2FCreating_a_Policy.htm"target="_blank">docs</a>).</p>
+<h4 id="2-create-a-bucket">2) Create a Bucket</h4>
+<p>Now we need to create a bucket in Wasabi. Click on <code>Buckets</code> in the left menu bar and then on the blue <code>Create Bucket</code> button in the right corner. Create a new Bucket with a unique bucket name. Bucket names are &ldquo;global&rdquo; so they need to be unique. I just added random chracters to the end of mine.</p>
+<p>Next select a Region nearest to you and go ahead and click <code>Create Bucket</code>. In my example, I used <code>us-east-2</code>.</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/create_bucket.png"><img  src="images/create_bucket.png"
+        alt="Add Dataset"/></a></p>
+<h4 id="3-setup-cloud-credentials">3) Setup Cloud Credentials</h4>
+<p>Head over to your FreeNAS instance and navigate to <code>System</code> -&gt; <code>Cloud Crednetials</code> and click <strong>Add</strong> in the top-right corner.</p>
+<p>Setup your Cloud Credential with the following properties:</p>
+<ul>
+<li><strong>Name:</strong> <code>Wasabi Backup</code></li>
+<li><strong>Provider:</strong> <code>Amazon S3</code></li>
+<li><strong>Access Key ID:</strong> Access Key from Step 1</li>
+<li><strong>Secret Access Key:</strong> Secret Key from Step 1</li>
+<li><strong>Advanced Settings:</strong> <code>checked</code></li>
+<li><strong>Endpoint URL:</strong> Find your Service URL <a href="https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions-"target="_blank">here</a> based on your Bucket region you selected in Step 2.</li>
+<li><strong>Region:</strong> <code>&lt;blank&gt;</code></li>
+<li><strong>Disable Endpoint Region:</strong> <code>checked</code></li>
+<li><strong>Use Signature Version 2:</strong> <code>unchecked</code></li>
+</ul>
+<p>Your settings should look something like this:</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/cloud_credential.png"><img  src="images/cloud_credential.png"
+        alt="Add Dataset"/></a></p>
+<p>Next click <strong>Verify Credential</strong> and make sure your credential is valid.</p>
+<h4 id="3-setup-cloud-sync-tasks">3) Setup Cloud Sync Tasks</h4>
+<p>In FreeNAS, navigate to <code>Tasks</code> -&gt; <code>Cloud Sync Tasks</code> and click on <strong>Add</strong> in the top-right corner. This step has a lot of details and they will vary based on your data layout and how you want to sync so tweak these to fit your needs.</p>
+<p>In my example, I will be backing up my NextCloud Data using the following properties:</p>
+<ul>
+<li><strong>Description:</strong> <code>NextCloud Data Backup</code></li>
+<li><strong>Direction:</strong> <code>PUSH</code></li>
+<li><strong>Credential:</strong> <code>Wasabi Backup</code></li>
+<li><strong>Bucket:</strong> <code>freenas-backup-oiqj0qml</code></li>
+<li><strong>Folder:</strong> <code>/NextCloud-Data</code> (this is the folder that will be created in your bucket)</li>
+<li><strong>Server-Side Encryption:</strong> <code>AES-256</code></li>
+<li><strong>Storage Class:</strong> <code>STANDARD</code></li>
+<li><strong>Use &ndash;fast-list:</strong> <code>checked</code> (if you have the RAM)</li>
+<li><strong>Directory/Files:</strong> <code>/mnt/myPool/NextCloud/data</code></li>
+<li><strong>Transfer Mode:</strong> <code>COPY</code></li>
+<li><strong>Remote Encryption:</strong> <code>checked</code></li>
+<li><strong>Filename Encryption:</strong> <code>checked</code></li>
+<li><strong>Encryption Password:</strong> create a new password. Do <strong>not</strong> use your FreeNAS or Wasabi passwords.</li>
+<li><strong>Encryption Sale:</strong> create a salt password.</li>
+<li><strong>Schedule the Cloud Sync Task:</strong> <code>Daily (0 0 * * *) at 00:00 (12:00 AM)</code></li>
+<li><strong>Enabled:</strong> <code>checked</code></li>
+<li><strong>Bandwidth Limit:</strong> <code>08:00,512KB 18:00,10MB 23:00,off</code></li>
+</ul>
+<h4 id="4-optional-start-task">4) (Optional) Start Task</h4>
+<p>The task is scheduled to run at Midnight daily. If you&rsquo;d like to start the task now, expand your Cloud Task and click the <strong>RUN NOW</strong> button.</p>
+<h4 id="finished">Finished!</h4>
+<p>That&rsquo;s it. Your data should be backing up to Wasabi now. You can check the progress of your Cloud Sync Task by clicking the <code>Task Manager</code> Clipboard icon in the top-right menu.</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/cloud_sync_progress.png"><img  src="images/cloud_sync_progress.png"
+        alt="Add Dataset"/></a></p>
+<p>You should also be seeing files/folders show up in Wasabi.</p>
+</article><section class="article labels"><a class="category" href=/categories/storage/>Storage</a><a class="tag" href=/tags/freenas/>FreeNAS</a><a class="tag" href=/tags/wasabi/>Wasabi</a><a class="tag" href=/tags/s3/>S3</a></section><section class="article navigation"><p><a class="link" href="/posts/freenas-as-tf-backend/"><span class="li">&rarr;</span>Setup FreeNAS as a Terraform backend</a class="link">
+    </p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2019 Notepadium.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>
