@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"><meta name="generator" content="Hugo 0.89.2" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>TrueNAS SCALE, iSCSI and K8s&nbsp;&ndash;&nbsp;Maxirus Blog</title><link rel="stylesheet" href="/css/core.min.1777adc965da1bdb5d535f1189cc11412719e001b6778d085f06b38281375018291ceb40fb0fb7e90ae91d0073b261c3.css" integrity="sha384-F3etyWXaG9tdU18RicwRQScZ4AG2d40IXwazgoE3UBgpHOtA&#43;w&#43;36QrpHQBzsmHD"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Maxirus Blog</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">Categories</a><a class="nav item" href="/tags/">Tags</a><a class="nav item" href="/about">About</a></nav></div></span></div><div class="site slogan"><span class="title">Better everyday</span></div></section><div id="content"><section class="article header">
+    <h1 class="article title">TrueNAS SCALE, iSCSI and K8s</h1><p class="article date">Tuesday, November 9, 2021</p></section><article class="article markdown-body"><h1 id="intro">Intro</h1>
+<p>This is a simple guide meant to help you deploy the <a href="https://github.com/democratic-csi/democratic-csi"target="_blank">democratic-csi</a> CSI Driver into your Kubernetes cluster via Helm, using <a href="https://www.truenas.com/docs/scale/"target="_blank">TrueNAS SCALE</a> as your storage backend for iSCSI volumes.</p>
+<blockquote>
+<p><strong>NOTE</strong>: Assumes you have TrueNAS SCALE RC.1 or later</p>
+</blockquote>
+<h2 id="node-setup">Node Setup</h2>
+<p>The TrueNAS team has put together steps for installing and configuring iscsi support for your nodes <a href="https://www.truenas.com/docs/core/solutions/integrations/containers/#prepare-the-nodes"target="_blank">here</a>. One word of caution is in order to use Multipath, you most have two NICs, on seperate physical subnets, and have multipath configured in TrueNAS.</p>
+<p>On Debian based distros, multipath is enabled by default. To disable multipath, create the directory and file <code>/etc/multipath/conf.d/multipath.conf</code> with the following:</p>
+<pre tabindex="0"><code class="language-config" data-lang="config">defaults {
+    find_multipaths &quot;no&quot;
+}
+</code></pre><h2 id="truenas-scale-setup">TrueNAS SCALE Setup</h2>
+<h3 id="1-enable-iscsi-service">1) Enable iSCSI Service</h3>
+<p>Enable iSCSI by going to <em>System Setting -&gt; Services</em>. Check <code>Start Automatically</code> box and then flip the switch to start the service</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/iscsi_service.png"><img  src="images/iscsi_service.png"
+        alt="iSCSI Service"/></a></p>
+<h3 id="2-configure-iscsi-portal">2) Configure iSCSI Portal</h3>
+<p>Next click the <em>Pencil</em> icon to the right of the iSCSI service to configure it.</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/iscsi_service_configure.png"><img  src="images/iscsi_service_configure.png"
+        alt="iSCSI Service Configure"/></a></p>
+<p>Go to <em>Portals</em> Tab can configure the following:</p>
+<ul>
+<li>Description: <code>Create a description</code></li>
+<li>Under <em>IP Address</em>, click <strong>Add</strong> to add the IP address <code>0.0.0.0</code> and port <code>3260</code></li>
+<li>leave Discovery Auth Method as <code>None</code></li>
+<li>Click <em>Save</em></li>
+</ul>
+<h3 id="3-configure-iscsi-initiators">3) Configure iSCSI Initiators</h3>
+<p>Go to <em>Initiators Groups</em> Tab and do the following:</p>
+<ul>
+<li>Click <em>Add Initiators Groups</em></li>
+<li>Check the <strong>Allow All Initiators</strong> box (<em>Note: You should go back later to restrict access.</em>)</li>
+<li>Description: <code>Democratic CSI</code></li>
+<li>Click <em>Save</em></li>
+<li>(Optiona) Create Authorized Access (<em>Note: will ignore this setup for the purposes of this guide</em>)</li>
+</ul>
+<h3 id="4-make-note-of-ids">4) Make note of IDs</h3>
+<p>Gather IDs of the <em>Portal</em> and <em>Initiator</em> you created in the previous step and make note of their IDs. Go to <em>iSCSI -&gt; Portals</em> and make note of the <em>Portal</em> ID. In my case, it&rsquo;s <code>1</code>.</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/iscsi_portal_review.png"><img  src="images/iscsi_portal_review.png"
+        alt="iSCSI Portal Review"/></a></p>
+<p>You can also confirm the Portal ID by click on the 3 dots -&gt; edit and looking at the ID in the address bar:</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/iscsi_portal_id.png"><img  src="images/iscsi_portal_id.png"
+        alt="iSCSI Portal ID"/></a></p>
+<p>Next, perform the same steps for the <em>Initiator</em> you created by going to <em>iSCSI -&gt; Initiators Groups</em> and make note of Group ID. In my case, it&rsquo;s <code>1</code>.</p>
+<h3 id="5-setup-credential">5) Setup credential</h3>
+<p>Create an API Key by click on the <em>Person</em> icon in the top right and then <em>API Keys</em></p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/api_keys_1.png"><img  src="images/api_keys_1.png"
+        alt="API Key step 1"/></a></p>
+<p>Next, click <em>Add API Keys</em></p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/api_keys_2.png"><img  src="images/api_keys_2.png"
+        alt="API Key step 2"/></a></p>
+<p>Give your API Key a name, in my case I named mine <code>csi</code>, then click <em>Add</em></p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="images/api_keys_3.png"><img  src="images/api_keys_3.png"
+        alt="API Key step 3"/></a></p>
+<p>Copy your API Key and save it somewhere safe.</p>
+<h3 id="6-create-nested-datasets">6) Create nested datasets</h3>
+<p>You&rsquo;ll want non-overlapping datasets for the various volume types (ie. if you were to add NFS down the road) and snapshots. In my case, I have a pool named <code>k8s</code> and I created the following nested Dataset structure:
+<a target="_blank" rel="noopener noreferrer" 
+  href="images/pool_structure.png"><img  src="images/pool_structure.png"
+        alt="Dataset "/></a></p>
+<h2 id="deploy-democratic-csi">Deploy Democratic CSI</h2>
+<p>This is where things get confusing as the documentation for the Helm Chart is unclear and examples are unusable. You can find the base values <a href="https://github.com/democratic-csi/charts/blob/master/stable/democratic-csi/values.yaml"target="_blank">here</a> and <em>most</em> of the <code>driver.config</code> values can be found <a href="https://github.com/democratic-csi/democratic-csi/blob/master/examples/freenas-api-iscsi.yaml"target="_blank">here</a>. Below is what I&rsquo;ve found to work:</p>
+<h3 id="1-create-valuesyaml">1) Create values.yaml</h3>
+<p>Create a <code>values.yaml</code> file with the following, replacing placeholders with your values:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="nt">csiDriver</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="c"># should be globally unique for a given cluster</span><span class="w">
+</span><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;org.democratic-csi.iscsi&#34;</span><span class="w">
+</span><span class="w">    </span><span class="nt">installCRD</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="w"></span><span class="nt">controller</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="nt">externalSnapshotter</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.1&#34;</span><span class="w"> </span><span class="c"># If using k8s version &gt;=1.20</span><span class="w">
+</span><span class="w"></span><span class="nt">driver</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l">freenas-api-iscsi</span><span class="w">
+</span><span class="w">    </span><span class="nt">instance_id</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="nt">httpConnection</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l">https</span><span class="w">
+</span><span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;your_host_or_ip&gt;</span><span class="w">
+</span><span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">443</span><span class="w">
+</span><span class="w">        </span><span class="nt">apiKey</span><span class="p">:</span><span class="w"> </span><span class="l">&lt;your_api_key&gt;</span><span class="w">
+</span><span class="w">        </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span><span class="w">    </span><span class="nt">zfs</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="nt">datasetParentName</span><span class="p">:</span><span class="w"> </span><span class="l">k8s/k3s/iscsi/vols</span><span class="w"> </span><span class="c"># Input your value from Step 4</span><span class="w">
+</span><span class="w">        </span><span class="nt">detachedSnapshotsDatasetParentName</span><span class="p">:</span><span class="w"> </span><span class="l">k8s/k3s/iscsi/snaps</span><span class="w"> </span><span class="c"># Input your value from Step 4</span><span class="w">
+</span><span class="w">    </span><span class="nt">iscsi</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="nt">targetPortal</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&lt;truenas_ip&gt;:3260&#34;</span><span class="w">
+</span><span class="w">        </span><span class="nt">targetGroups</span><span class="p">:</span><span class="w">
+</span><span class="w">            </span><span class="c"># Portal Group ID from Step 2 above</span><span class="w">
+</span><span class="w">        </span>- <span class="nt">targetGroupPortalGroup</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span><span class="w">            </span><span class="c"># Group Initiator ID from Step 2 above</span><span class="w">
+</span><span class="w">            </span><span class="nt">targetGroupInitiatorGroup</span><span class="p">:</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span><span class="w">            </span><span class="nt">targetGroupAuthType</span><span class="p">:</span><span class="w"> </span><span class="l">None</span><span class="w">
+</span><span class="w">    </span><span class="nt">storageClasses</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">freenas-iscsi-csi</span><span class="w">
+</span><span class="w">        </span><span class="nt">defaultClass</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="c"># Set to true if you&#39;d like for it to be the default</span><span class="w">
+</span><span class="w">        </span><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">Delete</span><span class="w">
+</span><span class="w">        </span><span class="nt">volumeBindingMode</span><span class="p">:</span><span class="w"> </span><span class="l">Immediate</span><span class="w">
+</span><span class="w">        </span><span class="nt">allowVolumeExpansion</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="w">        </span><span class="nt">parameters</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="nt">fsType</span><span class="p">:</span><span class="w"> </span><span class="l">ext4</span><span class="w">
+</span></code></pre></div><h3 id="2-add-democratic-csi-repo">2) Add democratic-csi repo</h3>
+<blockquote>
+<p><strong>NOTE</strong>: Aassumes Helm v3</p>
+</blockquote>
+<p>Add the democratic-csi repo by running the following:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">helm repo add democratic-csi https://democratic-csi.github.io/charts/
+helm repo update
+helm search repo democratic-csi/
+</code></pre></div><h3 id="3-deploy-democratic-csi">3) Deploy democratic-csi</h3>
+<p>Deploy democratic-csi:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">helm upgrade <span class="se">\
+</span><span class="se"></span>  --install <span class="se">\
+</span><span class="se"></span>  --values values.yaml <span class="se">\
+</span><span class="se"></span>  --namespace democratic-csi <span class="se">\
+</span><span class="se"></span>  --create-namespace <span class="se">\
+</span><span class="se"></span>  truenas-iscsi democratic-csi/democratic-csi
+</code></pre></div><h2 id="finished">Finished</h2>
+<p>That&rsquo;s it. You should now have a working installation for creating Volumes, backed by TrueNAS SCALE, in Kubernetes! Test it out by creating a Pod using the newly created <code>freenas-iscsi-csi</code> <em>StorageClass</em>.</p>
+</article><section class="article labels"><a class="category" href=/categories/kubernetes/>Kubernetes</a><a class="category" href=/categories/storage/>Storage</a><a class="tag" href=/tags/freenas/>FreeNAS</a><a class="tag" href=/tags/truenas/>TrueNAS</a><a class="tag" href=/tags/scale/>SCALE</a><a class="tag" href=/tags/k8s/>K8s</a><a class="tag" href=/tags/kubernetes/>Kubernetes</a></section><section class="article navigation"><p><a class="link" href="/posts/freenas-wasabi-cloud-sync/"><span class="li">&rarr;</span>FreeNAS Cloud-Sync using Wasabi</a class="link">
+    </p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2019 Notepadium.</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>

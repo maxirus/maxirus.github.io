@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"><url>
-    <loc>https://maxirus.github.io/categories/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
-    <loc>https://maxirus.github.io/tags/freenas/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/categories/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/freenas/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/k8s/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/kubernetes/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/categories/kubernetes/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/posts/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/scale/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/categories/storage/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/tags/truenas/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
+    <loc>https://maxirus.github.io/posts/truenas-scale-democratic-csi/</loc><lastmod>2021-11-09T17:00:00-04:00</lastmod></url><url>
     <loc>https://maxirus.github.io/posts/freenas-wasabi-cloud-sync/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
-    <loc>https://maxirus.github.io/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
-    <loc>https://maxirus.github.io/posts/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
     <loc>https://maxirus.github.io/tags/s3/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
-    <loc>https://maxirus.github.io/categories/storage/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
-    <loc>https://maxirus.github.io/tags/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
     <loc>https://maxirus.github.io/tags/wasabi/</loc><lastmod>2020-05-06T23:50:46-04:00</lastmod></url><url>
     <loc>https://maxirus.github.io/categories/development/</loc><lastmod>2020-02-05T19:44:46-05:00</lastmod></url><url>
     <loc>https://maxirus.github.io/posts/freenas-as-tf-backend/</loc><lastmod>2020-02-05T19:44:46-05:00</lastmod></url><url>
